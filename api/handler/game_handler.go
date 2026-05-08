@@ -91,6 +91,10 @@ func (h *GameHandler) Delete(c *gin.Context) {
 }
 
 func parseID(c *gin.Context) (uint, error) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	return parseUintParam(c, "id")
+}
+
+func parseUintParam(c *gin.Context, param string) (uint, error) {
+	id, err := strconv.ParseUint(c.Param(param), 10, 64)
 	return uint(id), err
 }

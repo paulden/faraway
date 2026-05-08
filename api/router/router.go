@@ -7,13 +7,13 @@ import (
 	"github.com/paulden/faraway/handler"
 )
 
-func New(gameHandler *handler.GameHandler) *gin.Engine {
+func New(gameHandler *handler.GameHandler, playerHandler *handler.PlayerHandler) *gin.Engine {
 	r := gin.Default()
-	registerRoutes(r, gameHandler)
+	registerRoutes(r, gameHandler, playerHandler)
 	return r
 }
 
-func registerRoutes(r *gin.Engine, gameHandler *handler.GameHandler) {
+func registerRoutes(r *gin.Engine, gameHandler *handler.GameHandler, playerHandler *handler.PlayerHandler) {
 	r.GET("/health", func(c *gin.Context) {
 		c.Status(http.StatusOK)
 	})
@@ -29,5 +29,9 @@ func registerRoutes(r *gin.Engine, gameHandler *handler.GameHandler) {
 		games.POST("", gameHandler.Create)
 		games.PUT("/:id", gameHandler.Update)
 		games.DELETE("/:id", gameHandler.Delete)
+
+		games.GET("/:id/players", playerHandler.GetAll)
+		games.POST("/:id/players", playerHandler.Add)
+		games.DELETE("/:id/players/:player_id", playerHandler.Remove)
 	}
 }

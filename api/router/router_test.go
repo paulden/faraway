@@ -14,7 +14,7 @@ func init() {
 }
 
 func TestHealthRoute(t *testing.T) {
-	r := New(nil)
+	r := New(nil, nil)
 
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/health", nil))
