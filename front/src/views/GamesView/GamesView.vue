@@ -1,19 +1,19 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import GameCard from '../components/GameCard.vue'
-import CreateGame from '../components/CreateGame.vue'
+import GameCard from '../../components/GameCard/GameCard.vue'
+import CreateGame from '../../components/CreateGame/CreateGame.vue'
+import { getGames } from '../../api/games.ts'
+import type { Game } from '../../types/api.ts'
 
-const API = import.meta.env.VITE_API_URL ?? '/api'
 const router = useRouter()
-const games = ref([])
+const games = ref<Game[]>([])
 const loading = ref(true)
-const error = ref(null)
+const error = ref<string | null>(null)
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${API}/games`)
-    games.value = await res.json()
+    games.value = await getGames()
   } catch {
     error.value = 'Could not load games.'
   } finally {

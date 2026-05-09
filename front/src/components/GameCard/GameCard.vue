@@ -1,5 +1,7 @@
-<script setup>
-const props = defineProps({ game: Object })
+<script setup lang="ts">
+import type { Game } from '../../types/api.ts'
+
+const props = defineProps<{ game: Game }>()
 
 const date = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',

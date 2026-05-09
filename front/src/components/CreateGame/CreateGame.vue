@@ -1,8 +1,7 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import { Plus } from 'lucide-vue-next'
-
-const API = import.meta.env.VITE_API_URL ?? '/api'
+import { createGame as apiCreateGame } from '../../api/games.ts'
 
 const emit = defineEmits(['created'])
 
@@ -19,12 +18,7 @@ async function createGame() {
   if (!newTitle.value.trim()) return
   creating.value = true
   try {
-    const res = await fetch(`${API}/games`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: newTitle.value.trim(), is_finished: false }),
-    })
-    const game = await res.json()
+    const game = await apiCreateGame(newTitle.value.trim())
     emit('created', game)
     showModal.value = false
   } finally {

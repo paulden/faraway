@@ -1,12 +1,14 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect } from 'vitest'
+import type { Game } from '../../types/api.ts'
 import GameCard from './GameCard.vue'
 
-const game = {
+const game: Game = {
   id: 1,
   title: 'Test Game',
   is_finished: false,
   created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z',
 }
 
 describe('GameCard', () => {

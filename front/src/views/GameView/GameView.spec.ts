@@ -1,6 +1,7 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createRouter, createMemoryHistory } from 'vue-router'
+import type { Game, Player, Round } from '../../types/api.ts'
 import GameView from './GameView.vue'
 
 const router = createRouter({
@@ -11,12 +12,23 @@ const router = createRouter({
   ],
 })
 
-const mockGame = { id: 1, title: 'Poker Night', is_finished: false }
+const mockGame: Game = {
+  id: 1,
+  title: 'Poker Night',
+  is_finished: false,
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z',
+}
 
-function stubFetch({ game = mockGame, players = [], rounds = [] } = {}) {
-  vi.stubGlobal('fetch', vi.fn((url) => {
+function stubFetch({
+  game = mockGame,
+  players = [] as Player[],
+  rounds = [] as Round[],
+} = {}) {
+  vi.stubGlobal('fetch', vi.fn((url: string) => {
     if (url.endsWith('/players')) return Promise.resolve({ json: () => Promise.resolve(players) })
     if (url.endsWith('/rounds')) return Promise.resolve({ json: () => Promise.resolve(rounds) })
+    if (url.includes('/scores')) return Promise.resolve({ json: () => Promise.resolve([]) })
     return Promise.resolve({ json: () => Promise.resolve(game) })
   }))
 }
@@ -68,16 +80,14 @@ describe('GameView', () => {
   })
 
   it('renders player names in the scoreboard header', async () => {
-    stubFetch({
-      players: [{ id: 10, name: 'Alice' }, { id: 11, name: 'Bob' }],
-      rounds: [{ id: 100, number: 1 }],
-    })
-    vi.stubGlobal('fetch', vi.fn((url) => {
-      if (url.endsWith('/players')) return Promise.resolve({ json: () => Promise.resolve([{ id: 10, name: 'Alice' }, { id: 11, name: 'Bob' }]) })
-      if (url.endsWith('/rounds')) return Promise.resolve({ json: () => Promise.resolve([{ id: 100, number: 1 }]) })
-      if (url.includes('/scores')) return Promise.resolve({ json: () => Promise.resolve([]) })
-      return Promise.resolve({ json: () => Promise.resolve(mockGame) })
-    }))
+    const players: Player[] = [
+      { id: 10, name: 'Alice', game_id: 1, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+      { id: 11, name: 'Bob', game_id: 1, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    ]
+    const rounds: Round[] = [
+      { id: 100, number: 1, game_id: 1, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    ]
+    stubFetch({ players, rounds })
     const wrapper = mount(GameView, { global: { plugins: [router] } })
     await flushPromises()
     expect(wrapper.text()).toContain('Alice')

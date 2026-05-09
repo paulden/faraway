@@ -1,37 +1,42 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { ChevronLeft, Plus } from 'lucide-vue-next'
+import { getGame, updateGame } from '../../api/games.ts'
+import { getPlayers, addPlayer as apiAddPlayer, removePlayer as apiRemovePlayer } from '../../api/players.ts'
+import { getRounds, addRound as apiAddRound } from '../../api/rounds.ts'
+import { getScores, createScore, updateScore } from '../../api/scores.ts'
+import type { Game, Player, Round } from '../../types/api.ts'
 
-const API = import.meta.env.VITE_API_URL ?? '/api'
+type ScoreEntry = { id: number; score: number }
+type ScoreMap = Record<number, Record<number, ScoreEntry>>
+
 const route = useRoute()
-const id = route.params.id
+const id = route.params.id as string
 
-const game = ref(null)
-const players = ref([])
-const rounds = ref([])
-const scores = ref({}) // scores[roundId][playerId] = { id, score } | undefined
+const game = ref<Game | null>(null)
+const players = ref<Player[]>([])
+const rounds = ref<Round[]>([])
+const scores = ref<ScoreMap>({}) // scores[roundId][playerId] = { id, score }
 
 onMounted(async () => {
-  const [gameRes, playersRes, roundsRes] = await Promise.all([
-    fetch(`${API}/games/${id}`),
-    fetch(`${API}/games/${id}/players`),
-    fetch(`${API}/games/${id}/rounds`),
+  const [gameData, playersData, roundsData] = await Promise.all([
+    getGame(id),
+    getPlayers(id),
+    getRounds(id),
   ])
-  game.value = await gameRes.json()
-  players.value = await playersRes.json()
-  rounds.value = await roundsRes.json()
+  game.value = gameData
+  players.value = playersData
+  rounds.value = roundsData
   await loadScores()
 })
 
 async function loadScores() {
   if (rounds.value.length === 0) return
   const results = await Promise.all(
-    rounds.value.map(r =>
-      fetch(`${API}/games/${id}/rounds/${r.id}/scores`).then(r => r.json())
-    )
+    rounds.value.map(r => getScores(id, r.id))
   )
-  const map = {}
+  const map: ScoreMap = {}
   rounds.value.forEach((round, i) => {
     map[round.id] = {}
     results[i].forEach(s => { map[round.id][s.player_id] = { id: s.id, score: s.score } })
@@ -45,21 +50,22 @@ const totals = computed(() =>
   )
 )
 
-const leaderId = computed(() => {
+const leaderId = computed<number | null>(() => {
   const entries = Object.entries(totals.value)
   if (entries.every(([, v]) => v === 0)) return null
-  return entries.reduce((a, b) => b[1] > a[1] ? b : a)[0]
+  return Number(entries.reduce((a, b) => b[1] > a[1] ? b : a)[0])
 })
 
 // Editing
-const editing = ref(null) // { roundId, playerId }
-const editValue = ref('')
-const editInput = ref(null)
+type EditingState = { roundId: number; playerId: number }
+const editing = ref<EditingState | null>(null)
+const editValue = ref<string>('')
+const editInput = ref<HTMLInputElement | null>(null)
 
-async function startEdit(roundId, playerId) {
+async function startEdit(roundId: number, playerId: number) {
   if (game.value?.is_finished) return
   editing.value = { roundId, playerId }
-  editValue.value = scores.value[roundId]?.[playerId]?.score ?? ''
+  editValue.value = scores.value[roundId]?.[playerId]?.score?.toString() ?? ''
   await nextTick()
   editInput.value?.focus()
   editInput.value?.select()
@@ -74,20 +80,10 @@ async function saveEdit() {
   const existing = scores.value[roundId]?.[playerId]
 
   if (existing) {
-    const res = await fetch(`${API}/games/${id}/rounds/${roundId}/scores/${existing.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ score: parsed }),
-    })
-    const updated = await res.json()
+    const updated = await updateScore(id, roundId, existing.id, parsed)
     scores.value[roundId][playerId] = { id: updated.id, score: updated.score }
   } else {
-    const res = await fetch(`${API}/games/${id}/rounds/${roundId}/scores`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ player_id: playerId, score: parsed }),
-    })
-    const created = await res.json()
+    const created = await createScore(id, roundId, playerId, parsed)
     if (!scores.value[roundId]) scores.value[roundId] = {}
     scores.value[roundId][playerId] = { id: created.id, score: created.score }
   }
@@ -100,9 +96,9 @@ function cancelEdit() {
 }
 
 // Remove player
-async function removePlayer(player) {
+async function removePlayer(player: Player) {
   if (!confirm(`Remove ${player.name} from this game?`)) return
-  await fetch(`${API}/games/${id}/players/${player.id}`, { method: 'DELETE' })
+  await apiRemovePlayer(id, player.id)
   players.value = players.value.filter(p => p.id !== player.id)
 }
 
@@ -115,12 +111,7 @@ async function addPlayer() {
   if (!newPlayerName.value.trim()) return
   addingPlayer.value = true
   try {
-    const res = await fetch(`${API}/games/${id}/players`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newPlayerName.value.trim() }),
-    })
-    players.value.push(await res.json())
+    players.value.push(await apiAddPlayer(id, newPlayerName.value.trim()))
     newPlayerName.value = ''
     showAddPlayer.value = false
   } finally {
@@ -131,12 +122,7 @@ async function addPlayer() {
 // Finish game
 async function finishGame() {
   if (!confirm('Mark this game as finished?')) return
-  const res = await fetch(`${API}/games/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title: game.value.title, is_finished: true }),
-  })
-  game.value = await res.json()
+  game.value = await updateGame(id, game.value!.title, true)
 }
 
 // Add round
@@ -144,14 +130,9 @@ async function addRound() {
   const next = rounds.value.length > 0
     ? Math.max(...rounds.value.map(r => r.number)) + 1
     : 1
-  const res = await fetch(`${API}/games/${id}/rounds`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ number: next }),
-  })
-  const round = await res.json()
+  const round = await apiAddRound(id, next)
   rounds.value.push(round)
-  scores.value[round.id] = {}
+  scores.value[round.id] = {} as Record<number, ScoreEntry>
 }
 </script>
 
@@ -207,7 +188,7 @@ async function addRound() {
                 class="px-5 py-3 text-slate-600 font-medium text-center border-b border-r border-slate-200 last:border-r-0"
               >
                 <span class="inline-flex items-center justify-center gap-1">
-                  <span v-if="leaderId == player.id">👑</span>
+                  <span v-if="leaderId === player.id">👑</span>
                   {{ player.name }}
                 </span>
               </th>
@@ -264,7 +245,7 @@ async function addRound() {
 
       <!-- Congrats banner -->
       <div v-if="game?.is_finished && leaderId" class="mb-6 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 text-amber-700 text-sm font-medium">
-        🎉 Congrats {{ players.find(p => p.id == leaderId)?.name }}!
+        🎉 Congrats {{ players.find(p => p.id === leaderId)?.name }}!
       </div>
 
       <!-- Actions (only if not finished) -->
