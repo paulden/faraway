@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: faraway
+      POSTGRES_PASSWORD: faraway
+      POSTGRES_DB: faraway
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U faraway"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: api
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: faraway
+      DB_PASSWORD: faraway
+      DB_NAME: faraway
+      DB_SSLMODE: disable
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

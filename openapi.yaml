@@ -1,0 +1,548 @@
+openapi: 3.0.3
+info:
+  title: Faraway API
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [Health]
+      responses:
+        "200":
+          description: Server is running
+
+  # ── Games ──────────────────────────────────────────────────────────────────
+
+  /games:
+    get:
+      summary: List all games
+      tags: [Games]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Game"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      summary: Create a game
+      tags: [Games]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GameInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Game"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /games/{id}:
+    parameters:
+      - $ref: "#/components/parameters/GameID"
+
+    get:
+      summary: Get a game
+      tags: [Games]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Game"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    put:
+      summary: Update a game
+      tags: [Games]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GameInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Game"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      summary: Delete a game
+      tags: [Games]
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Players ────────────────────────────────────────────────────────────────
+
+  /games/{id}/players:
+    parameters:
+      - $ref: "#/components/parameters/GameID"
+
+    get:
+      summary: List players in a game
+      tags: [Players]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Player"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      summary: Add a player to a game
+      tags: [Players]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayerInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /games/{id}/players/{player_id}:
+    parameters:
+      - $ref: "#/components/parameters/GameID"
+      - $ref: "#/components/parameters/PlayerID"
+
+    delete:
+      summary: Remove a player from a game
+      tags: [Players]
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Rounds ─────────────────────────────────────────────────────────────────
+
+  /games/{id}/rounds:
+    parameters:
+      - $ref: "#/components/parameters/GameID"
+
+    get:
+      summary: List rounds in a game
+      tags: [Rounds]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Round"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      summary: Create a round
+      tags: [Rounds]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoundInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Round"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /games/{id}/rounds/{round_id}:
+    parameters:
+      - $ref: "#/components/parameters/GameID"
+      - $ref: "#/components/parameters/RoundID"
+
+    get:
+      summary: Get a round
+      tags: [Rounds]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Round"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    put:
+      summary: Update a round
+      tags: [Rounds]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoundInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Round"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    delete:
+      summary: Delete a round
+      tags: [Rounds]
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Round Scores ───────────────────────────────────────────────────────────
+
+  /games/{id}/rounds/{round_id}/scores:
+    parameters:
+      - $ref: "#/components/parameters/GameID"
+      - $ref: "#/components/parameters/RoundID"
+
+    get:
+      summary: List scores for a round
+      tags: [Scores]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoundScore"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      summary: Add a score for a player in a round
+      tags: [Scores]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoundScoreInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoundScore"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /games/{id}/rounds/{round_id}/scores/{score_id}:
+    parameters:
+      - $ref: "#/components/parameters/GameID"
+      - $ref: "#/components/parameters/RoundID"
+      - $ref: "#/components/parameters/ScoreID"
+
+    put:
+      summary: Update a score
+      tags: [Scores]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoundScoreUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoundScore"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      summary: Delete a score
+      tags: [Scores]
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+# ── Components ───────────────────────────────────────────────────────────────
+
+components:
+  parameters:
+    GameID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    PlayerID:
+      name: player_id
+      in: path
+      required: true
+      schema:
+        type: integer
+    RoundID:
+      name: round_id
+      in: path
+      required: true
+      schema:
+        type: integer
+    ScoreID:
+      name: score_id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+  schemas:
+    Game:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Saturday Night"
+        is_finished:
+          type: boolean
+          example: false
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    GameInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          example: "Saturday Night"
+        is_finished:
+          type: boolean
+          example: false
+
+    Player:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Alice"
+        game_id:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PlayerInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          example: "Alice"
+
+    Round:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        number:
+          type: integer
+          example: 1
+        game_id:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RoundInput:
+      type: object
+      required: [number]
+      properties:
+        number:
+          type: integer
+          example: 1
+
+    RoundScore:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        score:
+          type: integer
+          example: 10
+        round_id:
+          type: integer
+          example: 1
+        player_id:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RoundScoreInput:
+      type: object
+      required: [player_id, score]
+      properties:
+        player_id:
+          type: integer
+          example: 1
+        score:
+          type: integer
+          example: 10
+
+    RoundScoreUpdate:
+      type: object
+      required: [score]
+      properties:
+        score:
+          type: integer
+          example: 15
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "record not found"
+
+  responses:
+    BadRequest:
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    UnprocessableEntity:
+      description: Business rule violation
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
