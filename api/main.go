@@ -39,5 +39,7 @@ func main() {
 	scoreHandler := handler.NewRoundScoreHandler(scoreService)
 
 	r := router.New(gameHandler, playerHandler, roundHandler, scoreHandler)
-	r.Run(":" + cfg.Port)
+	if err := r.Run(":" + cfg.Port); err != nil {
+		log.Fatalf("failed to start server: %v", err)
+	}
 }
