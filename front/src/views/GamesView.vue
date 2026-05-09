@@ -14,7 +14,7 @@ onMounted(async () => {
   try {
     const res = await fetch(`${API}/games`)
     games.value = await res.json()
-  } catch (e) {
+  } catch {
     error.value = 'Could not load games.'
   } finally {
     loading.value = false
