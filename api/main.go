@@ -30,6 +30,14 @@ func main() {
 	playerService := service.NewPlayerService(playerRepo, gameRepo)
 	playerHandler := handler.NewPlayerHandler(playerService)
 
-	r := router.New(gameHandler, playerHandler)
+	roundRepo := repository.NewRoundRepository(database)
+	roundService := service.NewRoundService(roundRepo, gameRepo)
+	roundHandler := handler.NewRoundHandler(roundService)
+
+	scoreRepo := repository.NewRoundScoreRepository(database)
+	scoreService := service.NewRoundScoreService(scoreRepo, roundRepo, playerRepo)
+	scoreHandler := handler.NewRoundScoreHandler(scoreService)
+
+	r := router.New(gameHandler, playerHandler, roundHandler, scoreHandler)
 	r.Run(":" + cfg.Port)
 }
