@@ -38,18 +38,39 @@ func (m *mockGameRepoForRound) Create(game *models.Game) error         { return 
 func (m *mockGameRepoForRound) Update(game *models.Game) error         { return nil }
 func (m *mockGameRepoForRound) Delete(id uint) error                   { return nil }
 
+type mockPlayerRepoForRound struct {
+	countByGameID func(gameID uint) (int64, error)
+}
+
+func (m *mockPlayerRepoForRound) FindAllByGameID(gameID uint) ([]models.Player, error) {
+	return nil, nil
+}
+func (m *mockPlayerRepoForRound) FindByID(id uint) (*models.Player, error)                    { return nil, nil }
+func (m *mockPlayerRepoForRound) ExistsByNameAndGameID(name string, gameID uint) (bool, error) { return false, nil }
+func (m *mockPlayerRepoForRound) Create(player *models.Player) error                           { return nil }
+func (m *mockPlayerRepoForRound) Delete(id uint) error                                         { return nil }
+func (m *mockPlayerRepoForRound) CountByGameID(gameID uint) (int64, error) {
+	return m.countByGameID(gameID)
+}
+
 var roundGameExists = &mockGameRepoForRound{
 	findByID: func(id uint) (*models.Game, error) { return &models.Game{}, nil },
 }
 var roundGameNotFound = &mockGameRepoForRound{
 	findByID: func(id uint) (*models.Game, error) { return nil, errors.New("record not found") },
 }
+var playersExist = &mockPlayerRepoForRound{
+	countByGameID: func(gameID uint) (int64, error) { return 1, nil },
+}
+var noPlayers = &mockPlayerRepoForRound{
+	countByGameID: func(gameID uint) (int64, error) { return 0, nil },
+}
 
 func TestRound_GetAllByGame_Success(t *testing.T) {
 	expected := []models.Round{{Number: 1}}
 	svc := NewRoundService(&mockRoundRepository{
 		findAllByGameID: func(gameID uint) ([]models.Round, error) { return expected, nil },
-	}, roundGameExists)
+	}, roundGameExists, playersExist)
 
 	rounds, err := svc.GetAllByGame(1)
 
@@ -58,7 +79,7 @@ func TestRound_GetAllByGame_Success(t *testing.T) {
 }
 
 func TestRound_GetAllByGame_GameNotFound(t *testing.T) {
-	svc := NewRoundService(&mockRoundRepository{}, roundGameNotFound)
+	svc := NewRoundService(&mockRoundRepository{}, roundGameNotFound, playersExist)
 
 	rounds, err := svc.GetAllByGame(99)
 
@@ -70,7 +91,7 @@ func TestRound_GetByID_Found(t *testing.T) {
 	expected := &models.Round{Number: 1}
 	svc := NewRoundService(&mockRoundRepository{
 		findByID: func(id uint) (*models.Round, error) { return expected, nil },
-	}, roundGameExists)
+	}, roundGameExists, playersExist)
 
 	round, err := svc.GetByID(1)
 
@@ -81,7 +102,7 @@ func TestRound_GetByID_Found(t *testing.T) {
 func TestRound_GetByID_NotFound(t *testing.T) {
 	svc := NewRoundService(&mockRoundRepository{
 		findByID: func(id uint) (*models.Round, error) { return nil, errors.New("record not found") },
-	}, roundGameExists)
+	}, roundGameExists, playersExist)
 
 	round, err := svc.GetByID(99)
 
@@ -94,7 +115,7 @@ func TestRound_Create_Success(t *testing.T) {
 	svc := NewRoundService(&mockRoundRepository{
 		existsByNumberAndGameID: func(number uint, gameID uint) (bool, error) { return false, nil },
 		create:                  func(r *models.Round) error { return nil },
-	}, roundGameExists)
+	}, roundGameExists, playersExist)
 
 	created, err := svc.Create(1, round)
 
@@ -103,7 +124,7 @@ func TestRound_Create_Success(t *testing.T) {
 }
 
 func TestRound_Create_GameNotFound(t *testing.T) {
-	svc := NewRoundService(&mockRoundRepository{}, roundGameNotFound)
+	svc := NewRoundService(&mockRoundRepository{}, roundGameNotFound, playersExist)
 
 	created, err := svc.Create(99, &models.Round{Number: 1})
 
@@ -114,7 +135,7 @@ func TestRound_Create_GameNotFound(t *testing.T) {
 func TestRound_Create_DuplicateNumber(t *testing.T) {
 	svc := NewRoundService(&mockRoundRepository{
 		existsByNumberAndGameID: func(number uint, gameID uint) (bool, error) { return true, nil },
-	}, roundGameExists)
+	}, roundGameExists, playersExist)
 
 	created, err := svc.Create(1, &models.Round{Number: 1})
 
@@ -128,7 +149,7 @@ func TestRound_Update_Success(t *testing.T) {
 		findByID:                func(id uint) (*models.Round, error) { return existing, nil },
 		existsByNumberAndGameID: func(number uint, gameID uint) (bool, error) { return false, nil },
 		update:                  func(r *models.Round) error { return nil },
-	}, roundGameExists)
+	}, roundGameExists, playersExist)
 
 	updated, err := svc.Update(1, &models.Round{Number: 2})
 
@@ -141,7 +162,7 @@ func TestRound_Update_DuplicateNumber(t *testing.T) {
 	svc := NewRoundService(&mockRoundRepository{
 		findByID:                func(id uint) (*models.Round, error) { return existing, nil },
 		existsByNumberAndGameID: func(number uint, gameID uint) (bool, error) { return true, nil },
-	}, roundGameExists)
+	}, roundGameExists, playersExist)
 
 	updated, err := svc.Update(1, &models.Round{Number: 2})
 
@@ -153,7 +174,7 @@ func TestRound_Delete_Success(t *testing.T) {
 	svc := NewRoundService(&mockRoundRepository{
 		findByID: func(id uint) (*models.Round, error) { return &models.Round{}, nil },
 		delete:   func(id uint) error { return nil },
-	}, roundGameExists)
+	}, roundGameExists, playersExist)
 
 	assert.NoError(t, svc.Delete(1))
 }
@@ -161,7 +182,16 @@ func TestRound_Delete_Success(t *testing.T) {
 func TestRound_Delete_NotFound(t *testing.T) {
 	svc := NewRoundService(&mockRoundRepository{
 		findByID: func(id uint) (*models.Round, error) { return nil, errors.New("record not found") },
-	}, roundGameExists)
+	}, roundGameExists, playersExist)
 
 	assert.ErrorIs(t, svc.Delete(99), ErrRoundNotFound)
+}
+
+func TestRound_Create_NoPlayers(t *testing.T) {
+	svc := NewRoundService(&mockRoundRepository{}, roundGameExists, noPlayers)
+
+	created, err := svc.Create(1, &models.Round{Number: 1})
+
+	assert.ErrorIs(t, err, ErrNoPlayersInGame)
+	assert.Nil(t, created)
 }

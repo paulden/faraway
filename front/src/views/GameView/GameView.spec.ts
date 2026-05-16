@@ -79,6 +79,24 @@ describe('GameView', () => {
     expect(wrapper.text()).not.toContain('Finish game')
   })
 
+  it('disables "Add round" button when there are no players', async () => {
+    const wrapper = mount(GameView, { global: { plugins: [router] } })
+    await flushPromises()
+    const btn = wrapper.findAll('button').find(b => b.text().includes('Add round'))
+    expect(btn?.element.disabled).toBe(true)
+  })
+
+  it('enables "Add round" button when players exist', async () => {
+    const players: Player[] = [
+      { id: 10, name: 'Alice', game_id: 1, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+    ]
+    stubFetch({ players })
+    const wrapper = mount(GameView, { global: { plugins: [router] } })
+    await flushPromises()
+    const btn = wrapper.findAll('button').find(b => b.text().includes('Add round'))
+    expect(btn?.element.disabled).toBe(false)
+  })
+
   it('renders player names in the scoreboard header', async () => {
     const players: Player[] = [
       { id: 10, name: 'Alice', game_id: 1, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },

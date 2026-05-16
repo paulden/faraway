@@ -31,7 +31,7 @@ func main() {
 	playerHandler := handler.NewPlayerHandler(playerService)
 
 	roundRepo := repository.NewRoundRepository(database)
-	roundService := service.NewRoundService(roundRepo, gameRepo)
+	roundService := service.NewRoundService(roundRepo, gameRepo, playerRepo)
 	roundHandler := handler.NewRoundHandler(roundService)
 
 	scoreRepo := repository.NewRoundScoreRepository(database)

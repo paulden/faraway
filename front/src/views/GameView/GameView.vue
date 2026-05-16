@@ -60,15 +60,15 @@ const leaderId = computed<number | null>(() => {
 type EditingState = { roundId: number; playerId: number }
 const editing = ref<EditingState | null>(null)
 const editValue = ref<string>('')
-const editInput = ref<HTMLInputElement | null>(null)
+const editInput = ref<HTMLInputElement[]>([])
 
 async function startEdit(roundId: number, playerId: number) {
   if (game.value?.is_finished) return
   editing.value = { roundId, playerId }
   editValue.value = scores.value[roundId]?.[playerId]?.score?.toString() ?? ''
   await nextTick()
-  editInput.value?.focus()
-  editInput.value?.select()
+  editInput.value[0]?.focus()
+  editInput.value[0]?.select()
 }
 
 async function saveEdit() {
@@ -213,7 +213,7 @@ async function addRound() {
                   ref="editInput"
                   v-model="editValue"
                   type="number"
-                  class="w-full px-5 py-3 text-center text-slate-600 focus:outline-none focus:bg-violet-50"
+                  class="w-full px-5 py-3 text-center text-slate-600 focus:outline-none focus:bg-violet-50 appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   @keyup.enter="saveEdit"
                   @keyup.esc="cancelEdit"
                   @blur="saveEdit"
@@ -252,7 +252,9 @@ async function addRound() {
       <div v-if="game && !game.is_finished" class="flex flex-wrap gap-3 items-center">
         <button
           @click="addRound"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-500 text-sm font-medium rounded-xl shadow-sm hover:shadow-md transition-shadow"
+          :disabled="players.length === 0"
+          :title="players.length === 0 ? 'Add at least one player before creating a round' : undefined"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-500 text-sm font-medium rounded-xl shadow-sm hover:shadow-md transition-shadow disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
         >
           <Plus :size="15" /> Add round
         </button>

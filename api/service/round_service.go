@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	ErrRoundNotFound    = errors.New("round not found")
+	ErrRoundNotFound     = errors.New("round not found")
 	ErrRoundNumberExists = errors.New("a round with this number already exists in this game")
+	ErrNoPlayersInGame   = errors.New("cannot create a round in a game with no players")
 )
 
 type RoundService interface {
@@ -21,12 +22,13 @@ type RoundService interface {
 }
 
 type roundService struct {
-	roundRepo repository.RoundRepository
-	gameRepo  repository.GameRepository
+	roundRepo  repository.RoundRepository
+	gameRepo   repository.GameRepository
+	playerRepo repository.PlayerRepository
 }
 
-func NewRoundService(roundRepo repository.RoundRepository, gameRepo repository.GameRepository) RoundService {
-	return &roundService{roundRepo: roundRepo, gameRepo: gameRepo}
+func NewRoundService(roundRepo repository.RoundRepository, gameRepo repository.GameRepository, playerRepo repository.PlayerRepository) RoundService {
+	return &roundService{roundRepo: roundRepo, gameRepo: gameRepo, playerRepo: playerRepo}
 }
 
 func (s *roundService) GetAllByGame(gameID uint) ([]models.Round, error) {
@@ -47,6 +49,14 @@ func (s *roundService) GetByID(id uint) (*models.Round, error) {
 func (s *roundService) Create(gameID uint, round *models.Round) (*models.Round, error) {
 	if _, err := s.gameRepo.FindByID(gameID); err != nil {
 		return nil, ErrGameNotFound
+	}
+
+	count, err := s.playerRepo.CountByGameID(gameID)
+	if err != nil {
+		return nil, err
+	}
+	if count == 0 {
+		return nil, ErrNoPlayersInGame
 	}
 
 	exists, err := s.roundRepo.ExistsByNumberAndGameID(round.Number, gameID)
